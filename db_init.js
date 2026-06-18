@@ -1,27 +1,33 @@
 require('dotenv').config();
 const mysql = require('mysql2/promise');
 
-const connectionConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 3306,
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || ''
-};
+
 
 async function initDB() {
   let connection;
   try {
-    console.log('Connecting to MySQL host...');
-    connection = await mysql.createConnection(connectionConfig);
-    
-    // 1. Create Database if it doesn't exist
-    const dbName = process.env.DB_NAME || 'rockings_cafe';
-    console.log(`Creating database "${dbName}" (if not exists)...`);
-    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
-    console.log(`Database "${dbName}" initialized.`);
-    
-    // Select the database
-    await connection.query(`USE \`${dbName}\``);
+    if (process.env.DATABASE_URL) {
+      console.log('Connecting to Cloud MySQL database using DATABASE_URL...');
+      connection = await mysql.createConnection(process.env.DATABASE_URL);
+      console.log('Connected to Cloud MySQL database.');
+    } else {
+      console.log('Connecting to Local MySQL host...');
+      connection = await mysql.createConnection({
+        host: process.env.DB_HOST || 'localhost',
+        port: process.env.DB_PORT || 3306,
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || 'pooja'
+      });
+      console.log('Connected to Local MySQL host.');
+      
+      const dbName = process.env.DB_NAME || 'rockings_cafe';
+      console.log(`Creating database "${dbName}" (if not exists)...`);
+      await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
+      console.log(`Database "${dbName}" initialized.`);
+      
+      // Select the database
+      await connection.query(`USE \`${dbName}\``);
+    }
 
     // 2. Create tables
     console.log('Creating tables...');
